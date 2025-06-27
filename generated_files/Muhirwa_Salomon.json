@@ -1,19 +1,19 @@
 {
     "fullName": "Muhirwa Salomon",
     "dateOfBirth": "NA",
-    "gender": "male",
-    "address": "Rwanda, Kigali, Nyarugenge",
-    "phoneNumber": "+250782204795",
-    "email": "muhirwasa@gmail.com",
+    "gender": "NA",
+    "address": "NA",
+    "phoneNumber": "NA",
+    "email": "NA",
     "insuranceProvider": "NA",
     "policyNumber": "NA",
     "medicalRecordNumber": "NA",
-    "serviceRequestDetails": "Requesting payment of 918.18 USD via Remitly.",
+    "serviceRequestDetails": "NA",
     "specimenInfo": "NA",
     "coverageInfo": "NA",
     "encounterInfo": "NA",
     "observationInfo": "NA",
     "procedureHistory": "NA",
     "medicationRequestHistory": "NA",
-    "otherRelevantInfo": "Passport number: PC630583"
+    "otherRelevantInfo": "NA"
 }

@@ -1,0 +1,36 @@
+{
+    "resourceType": "Bundle",
+    "id": "7ec2606c-6fba-476a-861f-7f147679d3b9",
+    "meta": {
+        "lastUpdated": "2025-06-27T21:40:10.450220+00:00"
+    },
+    "type": "collection",
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:2dd67057-975b-4ed2-a840-c22e4f971bfe",
+            "resource": {
+                "resourceType": "Patient",
+                "id": "2dd67057-975b-4ed2-a840-c22e4f971bfe",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Patient"
+                    ]
+                },
+                "identifier": [],
+                "name": [
+                    {
+                        "use": "official",
+                        "family": "Salomon",
+                        "given": [
+                            "Muhirwa"
+                        ]
+                    }
+                ],
+                "gender": "unknown",
+                "birthDate": null,
+                "address": [],
+                "telecom": []
+            }
+        }
+    ]
+}

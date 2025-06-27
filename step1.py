@@ -12,6 +12,7 @@ import PyPDF2
 import requests
 import uuid
 from docx import Document # Import for handling .docx files
+import datetime # For FHIR timestamps
 
 # Define the directory for saving processed files
 GENERATED_FILES_DIR = 'generated_files'
@@ -21,6 +22,10 @@ os.makedirs(GENERATED_FILES_DIR, exist_ok=True)
 def extract_text_from_pdf(pdf_path):
     """
     Extracts text content from a PDF document using PyPDF2.
+    NOTE: PyPDF2 extracts text from text-searchable PDFs. For scanned PDFs (image-based),
+    this will likely yield very little or no text. For robust OCR on scanned PDF *images*,
+    libraries like 'pdf2image' (requiring 'poppler-utils' system dependency) would be needed
+    to convert pages to images before sending to a vision model like Gemini.
     """
     text = ""
     try:
@@ -55,7 +60,7 @@ def convert_pdf_to_images(pdf_path):
     Placeholder for converting PDF pages to images.
     NOTE: This function is not fully implemented here as it typically requires 'pdf2image'
     and 'poppler-utils' system dependencies, which are outside the scope of basic Python installs.
-    For this project, if a PDF is uploaded, its text content is primarily used for Gemini analysis.
+    For this project, if a PDF is uploaded, its text content will be sent to Gemini if available.
     """
     images_base64 = []
     # No direct image conversion from PDF pages for simplicity without external binaries.
@@ -66,7 +71,7 @@ def get_gemini_api_key():
     Retrieves the Gemini API key from the 'config.json' file.
     This is a common practice for managing API keys in development environments.
     """
-    # Get the directory where step1.py is located to find config.json
+    # Get the directory where step1.py is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(current_dir, 'config.json')
     
@@ -185,6 +190,300 @@ def call_gemini_api(prompt_text, file_content_base64=None, mime_type=None):
         print(f"An unexpected error occurred during Gemini API call: {e}")
         return {"error": f"Unexpected error with Gemini API: {e}"}
 
+def construct_fhir_bundle(data):
+    """
+    Constructs a simplified FHIR R4 Bundle JSON from the extracted demographic and clinical data.
+    This is a basic construction and does not cover all FHIR complexities or validations.
+    """
+    # Helper to get value or "NA"
+    get_val = lambda key: data.get(key, "NA")
+
+    # Patient Resource
+    patient_resource = {
+        "resourceType": "Patient",
+        "id": str(uuid.uuid4()), # Unique ID for the patient resource
+        "meta": {
+            "profile": ["http://hl7.org/fhir/StructureDefinition/Patient"]
+        },
+        "identifier": [],
+        "name": [],
+        "gender": get_val("gender").lower() if get_val("gender") != "NA" else "unknown",
+        "birthDate": get_val("dateOfBirth") if get_val("dateOfBirth") != "NA" else None,
+        "address": [],
+        "telecom": []
+    }
+
+    if get_val("fullName") != "NA":
+        parts = get_val("fullName").split(" ")
+        family = parts[-1] if len(parts) > 1 else get_val("fullName")
+        given = parts[:-1] if len(parts) > 1 else []
+        patient_resource["name"].append({
+            "use": "official",
+            "family": family,
+            "given": given
+        })
+
+    if get_val("medicalRecordNumber") != "NA":
+        patient_resource["identifier"].append({
+            "use": "usual",
+            "type": {
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                    "code": "MR"
+                }]
+            },
+            "value": get_val("medicalRecordNumber")
+        })
+
+    if get_val("address") != "NA":
+        patient_resource["address"].append({
+            "use": "home",
+            "text": get_val("address")
+        })
+
+    if get_val("phoneNumber") != "NA":
+        patient_resource["telecom"].append({
+            "system": "phone",
+            "value": get_val("phoneNumber"),
+            "use": "home"
+        })
+
+    if get_val("email") != "NA":
+        patient_resource["telecom"].append({
+            "system": "email",
+            "value": get_val("email"),
+            "use": "home"
+        })
+
+    # Coverage Resource
+    coverage_resource = None
+    if get_val("insuranceProvider") != "NA" or get_val("policyNumber") != "NA":
+        coverage_resource = {
+            "resourceType": "Coverage",
+            "id": str(uuid.uuid4()),
+            "meta": {
+                "profile": ["http://hl7.org/fhir/StructureDefinition/Coverage"]
+            },
+            "status": "active",
+            "type": {
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                    "code": "RDP"
+                }],
+                "text": "Medical Plan"
+            },
+            "beneficiary": {
+                "reference": f"Patient/{patient_resource['id']}"
+            }
+        }
+        if get_val("policyNumber") != "NA":
+            coverage_resource["identifier"] = [{
+                "system": "http://example.org/fhir/sid/policy-number",
+                "value": get_val("policyNumber")
+            }]
+        if get_val("insuranceProvider") != "NA":
+            coverage_resource["payor"] = [{
+                "display": get_val("insuranceProvider")
+            }]
+        if get_val("coverageInfo") != "NA":
+             if "extension" not in coverage_resource:
+                 coverage_resource["extension"] = []
+             coverage_resource["extension"].append({
+                 "url": "http://example.org/fhir/StructureDefinition/coverage-info",
+                 "valueString": get_val("coverageInfo")
+             })
+
+
+    # ServiceRequest Resource
+    service_request_resource = None
+    if get_val("serviceRequestDetails") != "NA":
+        service_request_resource = {
+            "resourceType": "ServiceRequest",
+            "id": str(uuid.uuid4()),
+            "meta": {
+                "profile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
+            },
+            "status": "active",
+            "intent": "order",
+            "subject": {
+                "reference": f"Patient/{patient_resource['id']}"
+            },
+            "requester": { # Placeholder requester
+                "display": "Extracted from Document"
+            },
+            "code": { # General code for any service request
+                "coding": [{
+                    "system": "http://snomed.info/sct",
+                    "code": "394581000",
+                    "display": "Medical service"
+                }],
+                "text": get_val("serviceRequestDetails")
+            },
+             "authoredOn": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }
+
+    # Specimen Resource (simplified)
+    specimen_resource = None
+    if get_val("specimenInfo") != "NA":
+        specimen_resource = {
+            "resourceType": "Specimen",
+            "id": str(uuid.uuid4()),
+            "meta": {
+                "profile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
+            },
+            "status": "available",
+            "subject": {
+                "reference": f"Patient/{patient_resource['id']}"
+            },
+            "type": {
+                "text": get_val("specimenInfo") # Using text for simplicity
+            },
+            "collection": {
+                "collectedDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+            }
+        }
+
+    # Encounter Resource (simplified)
+    encounter_resource = None
+    if get_val("encounterInfo") != "NA":
+        encounter_resource = {
+            "resourceType": "Encounter",
+            "id": str(uuid.uuid4()),
+            "meta": {
+                "profile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
+            },
+            "status": "finished",
+            "class": {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                "code": "AMB",
+                "display": "ambulatory"
+            },
+            "subject": {
+                "reference": f"Patient/{patient_resource['id']}"
+            },
+            "period": {
+                "start": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+            },
+            "reasonCode": [{
+                "text": get_val("encounterInfo") # Using text for simplicity for diagnoses/context
+            }]
+        }
+
+    # Observation Resource (simplified)
+    observation_resource = None
+    if get_val("observationInfo") != "NA":
+        observation_resource = {
+            "resourceType": "Observation",
+            "id": str(uuid.uuid4()),
+            "meta": {
+                "profile": ["http://hl7.org/fhir/StructureDefinition/Observation"]
+            },
+            "status": "final",
+            "code": {
+                "text": get_val("observationInfo") # Using text for simplicity
+            },
+            "subject": {
+                "reference": f"Patient/{patient_resource['id']}"
+            },
+            "effectiveDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+        }
+
+    # Procedure Resource (simplified)
+    procedure_resource = None
+    if get_val("procedureHistory") != "NA":
+        procedure_resource = {
+            "resourceType": "Procedure",
+            "id": str(uuid.uuid4()),
+            "meta": {
+                "profile": ["http://hl7.org/fhir/StructureDefinition/Procedure"]
+            },
+            "status": "completed",
+            "code": {
+                "text": get_val("procedureHistory") # Using text for simplicity
+            },
+            "subject": {
+                "reference": f"Patient/{patient_resource['id']}"
+            },
+            "performedDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+        }
+    
+    # MedicationRequest Resource (simplified)
+    medication_request_resource = None
+    if get_val("medicationRequestHistory") != "NA":
+        medication_request_resource = {
+            "resourceType": "MedicationRequest",
+            "id": str(uuid.uuid4()),
+            "meta": {
+                "profile": ["http://hl7.org/fhir/StructureDefinition/MedicationRequest"]
+            },
+            "status": "active",
+            "intent": "order",
+            "medicationCodeableConcept": {
+                "text": get_val("medicationRequestHistory") # Using text for simplicity
+            },
+            "subject": {
+                "reference": f"Patient/{patient_resource['id']}"
+            },
+            "authoredOn": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+        }
+
+
+    # FHIR Bundle construction
+    bundle_entry = [
+        {
+            "fullUrl": f"urn:uuid:{patient_resource['id']}",
+            "resource": patient_resource
+        }
+    ]
+    if coverage_resource:
+        bundle_entry.append({
+            "fullUrl": f"urn:uuid:{coverage_resource['id']}",
+            "resource": coverage_resource
+        })
+    if service_request_resource:
+        bundle_entry.append({
+            "fullUrl": f"urn:uuid:{service_request_resource['id']}",
+            "resource": service_request_resource
+        })
+    if specimen_resource:
+        bundle_entry.append({
+            "fullUrl": f"urn:uuid:{specimen_resource['id']}",
+            "resource": specimen_resource
+        })
+    if encounter_resource:
+        bundle_entry.append({
+            "fullUrl": f"urn:uuid:{encounter_resource['id']}",
+            "resource": encounter_resource
+        })
+    if observation_resource:
+        bundle_entry.append({
+            "fullUrl": f"urn:uuid:{observation_resource['id']}",
+            "resource": observation_resource
+        })
+    if procedure_resource:
+        bundle_entry.append({
+            "fullUrl": f"urn:uuid:{procedure_resource['id']}",
+            "resource": procedure_resource
+        })
+    if medication_request_resource:
+        bundle_entry.append({
+            "fullUrl": f"urn:uuid:{medication_request_resource['id']}",
+            "resource": medication_request_resource
+        })
+
+    fhir_bundle = {
+        "resourceType": "Bundle",
+        "id": str(uuid.uuid4()),
+        "meta": {
+            "lastUpdated": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        },
+        "type": "collection",
+        "entry": bundle_entry
+    }
+
+    return fhir_bundle
+
+
 def process_document(file_path, original_filename):
     """
     Orchestrates the document processing workflow:
@@ -192,8 +491,9 @@ def process_document(file_path, original_filename):
     2. Extracts text/prepares image data.
     3. Calls Gemini API for data extraction.
     4. Saves extracted data to a JSON file.
-    5. Generates a PDF report.
-    6. Returns status and filenames.
+    5. Generates a FHIR R4 JSON bundle.
+    6. Generates a PDF report.
+    7. Returns status and filenames.
     """
     file_extension = original_filename.split('.')[-1].lower()
     demographics_data = {}
@@ -201,7 +501,6 @@ def process_document(file_path, original_filename):
     file_base64 = None
     mime_type = None
 
-    # Base prompt for Gemini API, requesting specific structured information
     prompt_base = (
         "Extract the following demographic and clinical information from this medical requisition document. "
         "Provide the output as a JSON object with these fields: "
@@ -215,23 +514,21 @@ def process_document(file_path, original_filename):
 
     try:
         if file_extension in ['png', 'jpg', 'jpeg']:
-            # Handle image files: read, base64 encode, set MIME type
             with open(file_path, 'rb') as f:
                 file_base64 = base64.b64encode(f.read()).decode('utf-8')
             mime_type = f'image/{file_extension}'
-            prompt = prompt_base # Image input uses the base prompt
+            prompt = prompt_base
             demographics_data = call_gemini_api(prompt, file_base64, mime_type)
 
         elif file_extension == 'pdf':
-            # Handle PDF files: extract text, then pass text to Gemini
             extracted_text = extract_text_from_pdf(file_path)
             if extracted_text:
-                prompt = f"{prompt_base} Document Content:\n{extracted_text}" # Text appended to base prompt
-                demographics_data = call_gemini_api(prompt) # No image data for text-only analysis
+                prompt = f"{prompt_base} Document Content:\n{extracted_text}"
+                demographics_data = call_gemini_api(prompt)
             else:
-                return {"error": "Failed to extract text from PDF or PDF is empty."}
+                return {"error": "Failed to extract text from PDF or PDF is empty/scanned with no text layer. For best results with scanned documents, try uploading as an image (JPG/PNG)."}
         
-        elif file_extension == 'docx': # Handle .docx files: extract text, then pass text to Gemini
+        elif file_extension == 'docx':
             extracted_text = extract_text_from_docx(file_path)
             if extracted_text:
                 prompt = f"{prompt_base} Document Content:\n{extracted_text}"
@@ -240,49 +537,60 @@ def process_document(file_path, original_filename):
                 return {"error": "Failed to extract text from DOCX or DOCX is empty."}
 
         else:
-            # Return error for unsupported file types
             return {"error": "Unsupported file type. Please upload a PDF, image (PNG, JPG, JPEG), or DOCX."}
 
-        # Check if demographics data was successfully extracted without errors
         if demographics_data and not demographics_data.get("error"):
             # Determine filenames for output JSON and PDF based on patient's full name
-            full_name = demographics_data.get('fullName', 'NA').replace(' ', '_').replace('/', '_')
-            if full_name == 'NA' or not full_name.strip():
-                # If name not found, use a UUID for unique filenames
-                json_filename = f"demographics_{uuid.uuid4().hex}.json"
-                pdf_filename = f"demographics_{uuid.uuid4().hex}.pdf"
+            full_name = demographics_data.get('fullName', 'NA').strip()
+            
+            # Sanitize the name to create a valid filename
+            if full_name.lower() == 'na' or not full_name:
+                base_filename = "no_name"
             else:
-                json_filename = f"{full_name}.json"
-                pdf_filename = f"{full_name}.pdf"
+                sanitized_name = ''.join(c if c.isalnum() else '_' for c in full_name)
+                # Remove consecutive underscores and leading/trailing underscores
+                sanitized_name = '_'.join(filter(None, sanitized_name.split('_')))
+                if not sanitized_name: # Fallback if sanitization results in an empty string
+                    sanitized_name = "demographics_unknown"
+                base_filename = sanitized_name
 
-            # Construct full paths for saving files
+            json_filename = f"{base_filename}.json" # Raw extracted data JSON
+            pdf_filename = f"{base_filename}.pdf" # PDF report
+            fhir_json_filename = f"{base_filename}_fhir.json" # FHIR R4 Bundle JSON
+
             json_path = os.path.join(GENERATED_FILES_DIR, json_filename)
             pdf_path_output = os.path.join(GENERATED_FILES_DIR, pdf_filename)
+            fhir_json_path = os.path.join(GENERATED_FILES_DIR, fhir_json_filename)
 
-            # Save extracted demographics to a JSON file
+            # Save extracted demographics to JSON
             with open(json_path, 'w') as f:
                 json.dump(demographics_data, f, indent=4)
             print(f"Demographics JSON saved to: {json_path}")
 
-            # Generate the PDF report from the extracted data
+            # Construct and save FHIR R4 Bundle
+            fhir_bundle = construct_fhir_bundle(demographics_data)
+            with open(fhir_json_path, 'w') as f:
+                json.dump(fhir_bundle, f, indent=4)
+            print(f"FHIR R4 JSON bundle generated and saved to: {fhir_json_path}")
+
+
+            # Generate PDF from demographics
             generate_demographics_pdf(demographics_data, pdf_path_output)
             print(f"Demographics PDF generated at: {pdf_path_output}")
 
-            # Return success message and generated filenames to the frontend
             return {
                 "message": "Document processed successfully!",
                 "json_filename": json_filename,
-                "pdf_filename": pdf_filename
+                "pdf_filename": pdf_filename,
+                "fhir_json_filename": fhir_json_filename # Return new filename
             }
         else:
-            # If Gemini API returned an error or no data, propagate that error
-            return demographics_data # Contains error message from API call
+            return demographics_data
 
     except Exception as e:
         print(f"Error during overall document processing: {e}")
         return {"error": f"An error occurred during processing: {e}"}
     finally:
-        # Clean up the uploaded temporary file after processing (whether successful or not)
         if os.path.exists(file_path):
             os.remove(file_path)
             print(f"Cleaned up temporary uploaded file: {file_path}")
@@ -292,8 +600,8 @@ def generate_demographics_pdf(data, output_pdf_path):
     """
     Generates a PDF document displaying the extracted demographic and clinical data.
     """
-    doc = SimpleDocTemplate(output_pdf_path, pagesize=letter) # Create a new PDF document
-    styles = getSampleStyleSheet() # Get standard ReportLab paragraph styles
+    doc = SimpleDocTemplate(output_pdf_path, pagesize=letter)
+    styles = getSampleStyleSheet()
 
     # Define custom paragraph styles for consistent formatting in the PDF
     h1_style = ParagraphStyle(
@@ -303,7 +611,7 @@ def generate_demographics_pdf(data, output_pdf_path):
         leading=28,
         alignment=TA_CENTER,
         spaceAfter=20,
-        textColor='#1e40af' # Blue color for main title
+        textColor='#1e40af'
     )
     h2_style = ParagraphStyle(
         'h2_custom',
@@ -312,7 +620,7 @@ def generate_demographics_pdf(data, output_pdf_path):
         leading=22,
         alignment=TA_LEFT,
         spaceAfter=12,
-        textColor='#1f2937' # Dark gray color for section headings
+        textColor='#1f2937'
     )
     p_style = ParagraphStyle(
         'p_custom',
@@ -320,36 +628,34 @@ def generate_demographics_pdf(data, output_pdf_path):
         fontSize=12,
         leading=16,
         spaceAfter=6,
-        textColor='#374151' # Medium gray for normal text
+        textColor='#374151'
     )
-    key_style = ParagraphStyle( # Style for the key/label part of data fields
+    key_style = ParagraphStyle(
         'key_custom',
         parent=p_style,
-        fontName='Helvetica-Bold', # Bold font for labels
-        textColor='#1f2937' # Dark gray for labels
+        fontName='Helvetica-Bold',
+        textColor='#1f2937'
     )
 
-    story = [] # List to hold all flowables (content elements) for the PDF
+    story = []
 
-    # Add Title to PDF
-    story.append(Paragraph("Patient Demographics Report", h1_style))
-    story.append(Spacer(1, 0.2 * inch)) # Add some vertical space
+    story.append(Paragraph("Patient Demographics and Clinical Report", h1_style))
+    story.append(Spacer(1, 0.2 * inch))
 
-    # --- Basic Information Section ---
+    # Basic Information
     story.append(Paragraph("Basic Information", h2_style))
-    # Loop through predefined keys and display names for this section
     for key, display_name in [
         ("fullName", "Full Name"),
         ("dateOfBirth", "Date of Birth"),
         ("gender", "Gender"),
         ("medicalRecordNumber", "Medical Record Number")
     ]:
-        value = data.get(key, 'NA') # Get value from data, default to 'NA' if not found
+        value = data.get(key, 'NA')
         story.append(Paragraph(f"<font name='Helvetica-Bold'>{display_name}:</font> {value}", p_style))
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # --- Contact Information Section ---
+    # Contact Info
     story.append(Paragraph("Contact Information", h2_style))
     for key, display_name in [
         ("address", "Address"),
@@ -361,7 +667,7 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # --- Insurance Information Section ---
+    # Insurance Information
     story.append(Paragraph("Insurance Information", h2_style))
     for key, display_name in [
         ("insuranceProvider", "Provider"),
@@ -373,7 +679,7 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # --- Medical Service Details Section ---
+    # Medical Service Details
     story.append(Paragraph("Medical Service Details", h2_style))
     for key, display_name in [
         ("serviceRequestDetails", "Service Request Details"),
@@ -384,7 +690,7 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # --- Clinical Context & History Section ---
+    # Clinical Context & History
     story.append(Paragraph("Clinical Context & History", h2_style))
     for key, display_name in [
         ("encounterInfo", "Encounter Information (Diagnoses etc.)"),
@@ -397,20 +703,17 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # --- Other Relevant Information Section (only if content exists) ---
+    # Other Relevant Info
     other_info = data.get("otherRelevantInfo", "NA")
     if other_info and other_info != 'NA':
         story.append(Paragraph("Other Relevant Information", h2_style))
         story.append(Paragraph(other_info, p_style))
 
     try:
-        doc.build(story) # Build the PDF document from the story elements
+        doc.build(story)
     except Exception as e:
         print(f"Error building PDF: {e}")
-        raise # Re-raise any error to ensure it's noticed
+        raise
 
 if __name__ == '__main__':
-    # This block is for testing step1.py directly, not used when run via Flask.
-    # When app.py imports step1, this __name__ == '__main__' block is skipped.
     print("This script is intended to be imported and used by app.py.")
-    print("You can add test logic here if you want to run it standalone for debugging.")

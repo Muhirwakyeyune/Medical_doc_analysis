@@ -4,21 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Document Auto-Accessioning</title>
-    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Inter for clean typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom basic styles for the body */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6; /* Light gray background */
         }
-        /* Max width for the main content container */
         .container {
             max-width: 800px;
         }
-        /* Custom spinner animation for loading states */
+        /* Custom spinner for loading */
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             border-left-color: #3b82f6; /* Blue spinner */
@@ -34,13 +30,10 @@
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <!-- Main container for the document processor content -->
     <div class="container bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-        <!-- Main heading of the document processor -->
         <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
             <span class="text-blue-600">Medical Document</span> Processor
         </h1>
-        <!-- Descriptive paragraph for the user -->
         <p class="text-lg text-gray-700 mb-8 text-center">
             Upload a medical requisition document (PDF, image, or Word document) to extract and organize demographic and clinical information.
         </p>
@@ -54,40 +47,37 @@
                 <div class="flex items-center justify-center w-full">
                     <label for="document-upload" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition duration-300 ease-in-out">
                         <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <!-- SVG icon for upload area -->
                             <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v8"></path></svg>
                             <p class="mb-2 text-lg text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
                             <p class="text-sm text-gray-500">PDF, PNG, JPG, DOCX (Max 5MB)</p>
                         </div>
-                        <!-- Hidden file input, triggered by the label click -->
-                        <!-- The 'accept' attribute restricts file types in the browser dialog -->
                         <input id="document-upload" type="file" class="hidden" accept=".pdf, .png, .jpg, .jpeg, .docx" />
                     </label>
                 </div>
-                <!-- Displays the name of the selected file -->
                 <div id="file-name-display" class="text-center text-gray-600 mt-2 text-md font-medium">No file chosen</div>
             </div>
 
             <!-- Process Button -->
             <button id="process-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 flex items-center justify-center">
                 <span id="button-text">Process Document</span>
-                <!-- Loading spinner, hidden by default -->
                 <div id="loading-spinner" class="spinner ml-3 hidden"></div>
             </button>
 
             <!-- Status and Download Section -->
-            <!-- Message area for displaying success or error messages -->
             <div id="status-message" class="text-center text-lg mt-4 hidden"></div>
 
-            <!-- Download PDF button, hidden by default until processing is complete -->
             <button id="download-pdf-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 mt-4 hidden">
                 Download Demographics PDF
+            </button>
+
+            <!-- NEW: Download FHIR R4 JSON Button -->
+            <button id="download-fhir-json-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 mt-4 hidden">
+                Download FHIR R4 JSON Bundle
             </button>
         </div>
     </div>
 
     <script>
-        // Get references to HTML elements
         const fileInput = document.getElementById('document-upload');
         const fileNameDisplay = document.getElementById('file-name-display');
         const processButton = document.getElementById('process-button');
@@ -95,96 +85,109 @@
         const loadingSpinner = document.getElementById('loading-spinner');
         const statusMessage = document.getElementById('status-message');
         const downloadPdfButton = document.getElementById('download-pdf-button');
+        const downloadFhirJsonButton = document.getElementById('download-fhir-json-button'); // NEW
 
-        let uploadedFile = null; // Variable to store the selected file
+        let uploadedFile = null;
 
-        // Event listener for when a file is selected in the input
+        // Event listener for file input change
         fileInput.addEventListener('change', (event) => {
-            uploadedFile = event.target.files[0]; // Get the first selected file
+            uploadedFile = event.target.files[0];
             if (uploadedFile) {
                 fileNameDisplay.textContent = `File selected: ${uploadedFile.name}`;
-                // Reset UI state when a new file is selected
+                // Reset UI state
                 statusMessage.classList.add('hidden');
                 downloadPdfButton.classList.add('hidden');
-                processButton.disabled = false; // Enable the process button
-                processButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Remove disabled styling
+                downloadFhirJsonButton.classList.add('hidden'); // NEW: Hide FHIR button
+                processButton.disabled = false; // Enable process button
+                processButton.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
                 fileNameDisplay.textContent = 'No file chosen';
                 uploadedFile = null;
-                processButton.disabled = true; // Disable if no file
-                processButton.classList.add('opacity-50', 'cursor-not-allowed'); // Add disabled styling
+                processButton.disabled = true; // Disable process button
+                processButton.classList.add('opacity-50', 'cursor-not-allowed');
             }
         });
 
-        // Event listener for when the process button is clicked
+        // Event listener for process button click
         processButton.addEventListener('click', async () => {
             if (!uploadedFile) {
-                // If no file is selected, show an error message
                 statusMessage.textContent = 'Please select a document to upload.';
                 statusMessage.className = 'text-center text-lg mt-4 text-red-600';
                 statusMessage.classList.remove('hidden');
-                return; // Stop execution
+                return;
             }
 
-            // Show loading state in the UI
+            // Show loading state
             buttonText.textContent = 'Processing...';
             loadingSpinner.classList.remove('hidden');
-            processButton.disabled = true; // Disable button to prevent multiple clicks
+            processButton.disabled = true;
             processButton.classList.add('opacity-50', 'cursor-not-allowed');
-            statusMessage.classList.add('hidden'); // Hide previous status message
-            downloadPdfButton.classList.add('hidden'); // Hide download button
+            statusMessage.classList.add('hidden');
+            downloadPdfButton.classList.add('hidden');
+            downloadFhirJsonButton.classList.add('hidden'); // NEW: Hide FHIR button
 
-            // Create FormData object to send the file to the server
             const formData = new FormData();
-            formData.append('document', uploadedFile); // 'document' must match the Flask route's expected field name
+            formData.append('document', uploadedFile);
 
             try {
-                // Send the file to the Flask backend's /upload endpoint
                 const response = await fetch('/upload', {
                     method: 'POST',
-                    body: formData // The FormData object handles multipart/form-data
+                    body: formData
                 });
 
-                const result = await response.json(); // Parse the JSON response from the server
+                const result = await response.json();
 
-                if (response.ok) { // Check if the HTTP response status is successful (2xx)
-                    statusMessage.textContent = result.message; // Display success message
+                if (response.ok) {
+                    statusMessage.textContent = result.message;
                     statusMessage.className = 'text-center text-lg mt-4 text-green-600';
                     statusMessage.classList.remove('hidden');
-                    downloadPdfButton.classList.remove('hidden'); // Show download button
-                    downloadPdfButton.dataset.filename = result.pdf_filename; // Store filename for download
+                    downloadPdfButton.classList.remove('hidden');
+                    downloadFhirJsonButton.classList.remove('hidden'); // NEW: Show FHIR button
+                    // Store the generated file names for download
+                    downloadPdfButton.dataset.filename = result.pdf_filename;
+                    downloadFhirJsonButton.dataset.filename = result.fhir_json_filename; // NEW: Store FHIR filename
                 } else {
-                    // Display error message from the server
                     statusMessage.textContent = `Error: ${result.error || 'Something went wrong.'}`;
                     statusMessage.className = 'text-center text-lg mt-4 text-red-600';
                     statusMessage.classList.remove('hidden');
                 }
             } catch (error) {
-                // Catch any network or unexpected errors
                 console.error('Error:', error);
                 statusMessage.textContent = 'An unexpected error occurred during processing.';
                 statusMessage.className = 'text-center text-lg mt-4 text-red-600';
                 statusMessage.classList.remove('hidden');
             } finally {
-                // Reset button state regardless of success or failure
+                // Reset button state
                 buttonText.textContent = 'Process Document';
                 loadingSpinner.classList.add('hidden');
-                processButton.disabled = false; // Re-enable the button
+                processButton.disabled = false;
                 processButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         });
 
-        // Event listener for when the download PDF button is clicked
+        // Event listener for download PDF button click
         downloadPdfButton.addEventListener('click', () => {
-            const pdfFilename = downloadPdfButton.dataset.filename; // Get the filename stored earlier
+            const pdfFilename = downloadPdfButton.dataset.filename;
             if (pdfFilename) {
-                // Create a temporary anchor element to trigger download
                 const link = document.createElement('a');
-                link.href = `/download_pdf?filename=${pdfFilename}`; // Link to the Flask download route
-                link.download = pdfFilename; // Suggests a filename for the downloaded file
-                document.body.appendChild(link); // Append to body (necessary for Firefox)
-                link.click(); // Programmatically click the link to start download
-                document.body.removeChild(link); // Remove the temporary link
+                link.href = `/download_pdf?filename=${pdfFilename}`;
+                link.download = pdfFilename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+
+        // NEW: Event listener for download FHIR JSON button click
+        downloadFhirJsonButton.addEventListener('click', () => {
+            const fhirJsonFilename = downloadFhirJsonButton.dataset.filename;
+            if (fhirJsonFilename) {
+                const link = document.createElement('a');
+                link.href = `/download_fhir_json?filename=${fhirJsonFilename}`; // NEW route
+                link.download = fhirJsonFilename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
         });
     </script>

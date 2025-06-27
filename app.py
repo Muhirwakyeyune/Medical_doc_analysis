@@ -101,6 +101,25 @@ def download_pdf():
         # Return error if the PDF file is not found
         return jsonify({"error": "PDF not found"}), 404
 
+@app.route('/download_fhir_json', methods=['GET']) # NEW ROUTE FOR FHIR JSON
+def download_fhir_json():
+    """
+    Allows users to download the generated FHIR R4 JSON bundle.
+    It expects a 'filename' query parameter in the GET request.
+    """
+    filename = request.args.get('filename')
+    if not filename:
+        return jsonify({"error": "FHIR JSON filename not provided"}), 400
+
+    fhir_json_path = os.path.join(app.config['GENERATED_FILES_DIR'], filename)
+
+    if os.path.exists(fhir_json_path):
+        # Send the file as an attachment with appropriate MIME type
+        return send_file(fhir_json_path, as_attachment=True, mimetype='application/json')
+    else:
+        return jsonify({"error": "FHIR JSON bundle not found"}), 404
+
+
 if __name__ == '__main__':
     # This block executes only when app.py is run directly (e.g., python app.py)
     # It starts the Flask development server.
