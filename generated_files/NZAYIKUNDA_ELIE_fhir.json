@@ -1,0 +1,91 @@
+{
+    "resourceType": "Bundle",
+    "id": "095a306b-f88b-4520-96d6-55149f0129a0",
+    "meta": {
+        "lastUpdated": "2025-06-28T09:45:47.263243+00:00"
+    },
+    "type": "collection",
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:e503b70e-601e-46a9-88f9-539e69827bb9",
+            "resource": {
+                "resourceType": "Patient",
+                "id": "e503b70e-601e-46a9-88f9-539e69827bb9",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Patient"
+                    ]
+                },
+                "identifier": [
+                    {
+                        "use": "usual",
+                        "type": {
+                            "coding": [
+                                {
+                                    "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                                    "code": "MR"
+                                }
+                            ]
+                        },
+                        "value": "202122206418"
+                    }
+                ],
+                "name": [
+                    {
+                        "use": "official",
+                        "family": "ELIE",
+                        "given": [
+                            "NZAYIKUNDA"
+                        ]
+                    }
+                ],
+                "gender": "unknown",
+                "birthDate": null,
+                "address": [],
+                "telecom": [
+                    {
+                        "system": "phone",
+                        "value": "0788875779",
+                        "use": "home"
+                    },
+                    {
+                        "system": "email",
+                        "value": "infoefotec@gmail.com",
+                        "use": "home"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:bf85d1a3-d351-4353-b057-601196729d8f",
+            "resource": {
+                "resourceType": "ServiceRequest",
+                "id": "bf85d1a3-d351-4353-b057-601196729d8f",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
+                    ]
+                },
+                "status": "active",
+                "intent": "order",
+                "subject": {
+                    "reference": "Patient/e503b70e-601e-46a9-88f9-539e69827bb9"
+                },
+                "requester": {
+                    "display": "Extracted from Document"
+                },
+                "code": {
+                    "coding": [
+                        {
+                            "system": "http://snomed.info/sct",
+                            "code": "394581000",
+                            "display": "Medical service"
+                        }
+                    ],
+                    "text": "STUDENT ACADEMIC REPORT"
+                },
+                "authoredOn": "2025-06-28T09:45:47.263172+00:00"
+            }
+        }
+    ]
+}

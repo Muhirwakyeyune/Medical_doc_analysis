@@ -12,6 +12,7 @@ import PyPDF2
 import requests
 import uuid
 from docx import Document # Import for handling .docx files
+from pdf2image import convert_from_path # NEW: For converting PDF to images
 import datetime # For FHIR timestamps
 
 # Define the directory for saving processed files
@@ -19,26 +20,27 @@ GENERATED_FILES_DIR = 'generated_files'
 # Create the directory if it doesn't already exist
 os.makedirs(GENERATED_FILES_DIR, exist_ok=True)
 
+# Define a threshold for "low text density" to guess if a PDF is scanned
+# This is a heuristic; adjust as needed. A very small number means mostly image.
+MIN_TEXT_LENGTH_FOR_OCR_ASSUMPTION = 50
+
 def extract_text_from_pdf(pdf_path):
     """
     Extracts text content from a PDF document using PyPDF2.
-    NOTE: PyPDF2 extracts text from text-searchable PDFs. For scanned PDFs (image-based),
-    this will likely yield very little or no text. For robust OCR on scanned PDF *images*,
-    libraries like 'pdf2image' (requiring 'poppler-utils' system dependency) would be needed
-    to convert pages to images before sending to a vision model like Gemini.
+    Returns the extracted text and a boolean indicating if significant text was found.
     """
     text = ""
     try:
         with open(pdf_path, 'rb') as file:
             reader = PyPDF2.PdfReader(file)
-            # Iterate through each page and extract text
             for page_num in range(len(reader.pages)):
                 page = reader.pages[page_num]
-                text += page.extract_text() or "" # Append extracted text, handle None for empty pages
-        return text
+                text += page.extract_text() or ""
+        # Return text and whether a substantial amount of text was extracted
+        return text, len(text.strip()) > MIN_TEXT_LENGTH_FOR_OCR_ASSUMPTION
     except Exception as e:
-        print(f"Error extracting text from PDF: {e}")
-        return None
+        print(f"Error extracting text from PDF with PyPDF2: {e}")
+        return None, False
 
 def extract_text_from_docx(docx_path):
     """
@@ -47,7 +49,6 @@ def extract_text_from_docx(docx_path):
     text = ""
     try:
         document = Document(docx_path)
-        # Iterate through each paragraph in the document and append its text
         for paragraph in document.paragraphs:
             text += paragraph.text + "\n"
         return text
@@ -55,30 +56,17 @@ def extract_text_from_docx(docx_path):
         print(f"Error extracting text from DOCX: {e}")
         return None
 
-def convert_pdf_to_images(pdf_path):
-    """
-    Placeholder for converting PDF pages to images.
-    NOTE: This function is not fully implemented here as it typically requires 'pdf2image'
-    and 'poppler-utils' system dependencies, which are outside the scope of basic Python installs.
-    For this project, if a PDF is uploaded, its text content will be sent to Gemini if available.
-    """
-    images_base64 = []
-    # No direct image conversion from PDF pages for simplicity without external binaries.
-    return images_base64
-
 def get_gemini_api_key():
     """
     Retrieves the Gemini API key from the 'config.json' file.
-    This is a common practice for managing API keys in development environments.
     """
-    # Get the directory where step1.py is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(current_dir, 'config.json')
     
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)
-            api_key = config.get("GEMINI_API_KEY", "") # Get the key, default to empty string if not found
+            api_key = config.get("GEMINI_API_KEY", "")
             if not api_key:
                 print("Warning: 'GEMINI_API_KEY' not found in config.json. Please ensure it's present.")
             return api_key
@@ -92,35 +80,33 @@ def get_gemini_api_key():
         print(f"An unexpected error occurred while reading config.json: {e}")
         return ""
 
-def call_gemini_api(prompt_text, file_content_base64=None, mime_type=None):
+def call_gemini_api(prompt_text, file_content_base64=None, mime_type=None, image_parts=None):
     """
     Makes a call to the Google Gemini API to extract structured information.
-    It can handle text-only prompts or multimodal prompts with image data.
+    It can handle text-only prompts, multimodal prompts with single image data,
+    or multimodal prompts with multiple image parts (for scanned PDFs).
     """
     api_key = get_gemini_api_key()
     if not api_key:
-        # Return an error if the API key is not available
         return {"error": "Gemini API Key is missing. Please ensure it's in config.json."}
 
-    # Gemini API endpoint for gemini-2.0-flash model
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
     chat_history = []
-    parts = [{"text": prompt_text}] # Initial part of the prompt is text
+    parts = [{"text": prompt_text}]
 
-    # If image data is provided, add it to the parts for multimodal input
-    if file_content_base64 and mime_type:
+    if file_content_base64 and mime_type: # For single image uploads (JPG/PNG)
         parts.append({
             "inlineData": {
                 "mimeType": mime_type,
                 "data": file_content_base64
             }
         })
+    elif image_parts: # For multiple image pages from PDF conversion
+        parts.extend(image_parts) # Add all image parts to the prompt
 
-    chat_history.append({"role": "user", "parts": parts}) # Add user message to chat history
+    chat_history.append({"role": "user", "parts": parts})
 
-    # Define the JSON schema for the expected structured output from Gemini
-    # This guides the model to return data in a predictable format
     response_schema = {
         "type": "OBJECT",
         "properties": {
@@ -142,7 +128,7 @@ def call_gemini_api(prompt_text, file_content_base64=None, mime_type=None):
             "medicationRequestHistory": {"type": "STRING", "description": "Patient's hormone therapy or other medication request history."},
             "otherRelevantInfo": {"type": "STRING", "description": "Any other key demographic or clinical information found, summarized."}
         },
-        "propertyOrdering": [ # Defines the preferred order of fields in the output JSON
+        "propertyOrdering": [
             "fullName", "dateOfBirth", "gender", "address", "phoneNumber", "email",
             "insuranceProvider", "policyNumber", "medicalRecordNumber",
             "serviceRequestDetails", "specimenInfo", "coverageInfo", "encounterInfo",
@@ -151,34 +137,31 @@ def call_gemini_api(prompt_text, file_content_base64=None, mime_type=None):
         ]
     }
 
-    # Construct the payload for the API request
     payload = {
         "contents": chat_history,
         "generationConfig": {
-            "responseMimeType": "application/json", # Requesting JSON output
-            "responseSchema": response_schema # Providing the schema for structured response
+            "responseMimeType": "application/json",
+            "responseSchema": response_schema
         }
     }
 
-    headers = {'Content-Type': 'application/json'} # Set content type for JSON payload
+    headers = {'Content-Type': 'application/json'}
 
     try:
-        # Send POST request to Gemini API
         response = requests.post(api_url, headers=headers, data=json.dumps(payload))
-        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-        result = response.json() # Parse the JSON response from the API
+        response.raise_for_status()
+        result = response.json()
 
-        # Extract the text content (which is a JSON string) from the API response
         if result.get("candidates") and result["candidates"][0].get("content") and \
            result["candidates"][0]["content"].get("parts") and result["candidates"][0]["content"]["parts"][0].get("text"):
             json_string = result["candidates"][0]["content"]["parts"][0]["text"]
-            parsed_json = json.loads(json_string) # Parse the JSON string into a Python dictionary
+            parsed_json = json.loads(json_string)
             return parsed_json
         else:
             print("Gemini API did not return structured content or expected format.")
             return {"error": "Failed to extract structured data from Gemini."}
     except requests.exceptions.HTTPError as err:
-        print(f"HTTP error occurred during Gemini API call: {err} - Response: {err.response.text}")
+        print(f"HTTP error occurred during Gemini API call: {err} - {err.response.text}")
         return {"error": f"Gemini API HTTP Error: {err.response.text}"}
     except requests.exceptions.ConnectionError as err:
         print(f"Connection error occurred during Gemini API call: {err}")
@@ -195,13 +178,11 @@ def construct_fhir_bundle(data):
     Constructs a simplified FHIR R4 Bundle JSON from the extracted demographic and clinical data.
     This is a basic construction and does not cover all FHIR complexities or validations.
     """
-    # Helper to get value or "NA"
     get_val = lambda key: data.get(key, "NA")
 
-    # Patient Resource
     patient_resource = {
         "resourceType": "Patient",
-        "id": str(uuid.uuid4()), # Unique ID for the patient resource
+        "id": str(uuid.uuid4()),
         "meta": {
             "profile": ["http://hl7.org/fhir/StructureDefinition/Patient"]
         },
@@ -255,9 +236,8 @@ def construct_fhir_bundle(data):
             "use": "home"
         })
 
-    # Coverage Resource
     coverage_resource = None
-    if get_val("insuranceProvider") != "NA" or get_val("policyNumber") != "NA":
+    if get_val("insuranceProvider") != "NA" or get_val("policyNumber") != "NA" or get_val("coverageInfo") != "NA":
         coverage_resource = {
             "resourceType": "Coverage",
             "id": str(uuid.uuid4()),
@@ -293,8 +273,6 @@ def construct_fhir_bundle(data):
                  "valueString": get_val("coverageInfo")
              })
 
-
-    # ServiceRequest Resource
     service_request_resource = None
     if get_val("serviceRequestDetails") != "NA":
         service_request_resource = {
@@ -308,10 +286,10 @@ def construct_fhir_bundle(data):
             "subject": {
                 "reference": f"Patient/{patient_resource['id']}"
             },
-            "requester": { # Placeholder requester
+            "requester": {
                 "display": "Extracted from Document"
             },
-            "code": { # General code for any service request
+            "code": {
                 "coding": [{
                     "system": "http://snomed.info/sct",
                     "code": "394581000",
@@ -322,7 +300,6 @@ def construct_fhir_bundle(data):
              "authoredOn": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
 
-    # Specimen Resource (simplified)
     specimen_resource = None
     if get_val("specimenInfo") != "NA":
         specimen_resource = {
@@ -336,14 +313,13 @@ def construct_fhir_bundle(data):
                 "reference": f"Patient/{patient_resource['id']}"
             },
             "type": {
-                "text": get_val("specimenInfo") # Using text for simplicity
+                "text": get_val("specimenInfo")
             },
             "collection": {
-                "collectedDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+                "collectedDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
         }
 
-    # Encounter Resource (simplified)
     encounter_resource = None
     if get_val("encounterInfo") != "NA":
         encounter_resource = {
@@ -362,14 +338,13 @@ def construct_fhir_bundle(data):
                 "reference": f"Patient/{patient_resource['id']}"
             },
             "period": {
-                "start": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+                "start": datetime.datetime.now(datetime.timezone.utc).isoformat()
             },
             "reasonCode": [{
-                "text": get_val("encounterInfo") # Using text for simplicity for diagnoses/context
+                "text": get_val("encounterInfo")
             }]
         }
 
-    # Observation Resource (simplified)
     observation_resource = None
     if get_val("observationInfo") != "NA":
         observation_resource = {
@@ -380,15 +355,14 @@ def construct_fhir_bundle(data):
             },
             "status": "final",
             "code": {
-                "text": get_val("observationInfo") # Using text for simplicity
+                "text": get_val("observationInfo")
             },
             "subject": {
                 "reference": f"Patient/{patient_resource['id']}"
             },
-            "effectiveDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+            "effectiveDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
 
-    # Procedure Resource (simplified)
     procedure_resource = None
     if get_val("procedureHistory") != "NA":
         procedure_resource = {
@@ -399,15 +373,14 @@ def construct_fhir_bundle(data):
             },
             "status": "completed",
             "code": {
-                "text": get_val("procedureHistory") # Using text for simplicity
+                "text": get_val("procedureHistory")
             },
             "subject": {
                 "reference": f"Patient/{patient_resource['id']}"
             },
-            "performedDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+            "performedDateTime": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
     
-    # MedicationRequest Resource (simplified)
     medication_request_resource = None
     if get_val("medicationRequestHistory") != "NA":
         medication_request_resource = {
@@ -419,16 +392,14 @@ def construct_fhir_bundle(data):
             "status": "active",
             "intent": "order",
             "medicationCodeableConcept": {
-                "text": get_val("medicationRequestHistory") # Using text for simplicity
+                "text": get_val("medicationRequestHistory")
             },
             "subject": {
                 "reference": f"Patient/{patient_resource['id']}"
             },
-            "authoredOn": datetime.datetime.now(datetime.timezone.utc).isoformat() # Placeholder
+            "authoredOn": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
 
-
-    # FHIR Bundle construction
     bundle_entry = [
         {
             "fullUrl": f"urn:uuid:{patient_resource['id']}",
@@ -483,12 +454,11 @@ def construct_fhir_bundle(data):
 
     return fhir_bundle
 
-
 def process_document(file_path, original_filename):
     """
     Orchestrates the document processing workflow:
     1. Determines file type.
-    2. Extracts text/prepares image data.
+    2. Extracts text/prepares image data or converts PDF pages to images.
     3. Calls Gemini API for data extraction.
     4. Saves extracted data to a JSON file.
     5. Generates a FHIR R4 JSON bundle.
@@ -500,6 +470,7 @@ def process_document(file_path, original_filename):
     extracted_text = None
     file_base64 = None
     mime_type = None
+    image_parts_for_gemini = [] # To hold multiple image parts for Gemini (e.g., from PDF pages)
 
     prompt_base = (
         "Extract the following demographic and clinical information from this medical requisition document. "
@@ -514,19 +485,54 @@ def process_document(file_path, original_filename):
 
     try:
         if file_extension in ['png', 'jpg', 'jpeg']:
+            # Handle single image files: read, base64 encode, set MIME type
             with open(file_path, 'rb') as f:
                 file_base64 = base64.b64encode(f.read()).decode('utf-8')
             mime_type = f'image/{file_extension}'
             prompt = prompt_base
-            demographics_data = call_gemini_api(prompt, file_base64, mime_type)
+            demographics_data = call_gemini_api(prompt, file_content_base64=file_base64, mime_type=mime_type)
 
         elif file_extension == 'pdf':
-            extracted_text = extract_text_from_pdf(file_path)
-            if extracted_text:
-                prompt = f"{prompt_base} Document Content:\n{extracted_text}"
+            # Try extracting text first
+            pdf_text, has_significant_text = extract_text_from_pdf(file_path)
+
+            if has_significant_text:
+                # If text is substantial, send text to Gemini (for text-searchable PDFs)
+                prompt = f"{prompt_base} Document Content:\n{pdf_text}"
                 demographics_data = call_gemini_api(prompt)
             else:
-                return {"error": "Failed to extract text from PDF or PDF is empty/scanned with no text layer. For best results with scanned documents, try uploading as an image (JPG/PNG)."}
+                # If text is minimal or absent (likely a scanned PDF), convert pages to images
+                print("No significant text found in PDF. Attempting image-based OCR via pdf2image...")
+                try:
+                    # convert_from_path requires Poppler to be installed on the system
+                    # This will convert each page of the PDF into a PIL Image object
+                    images = convert_from_path(file_path)
+                    
+                    # Prepare each image as an inlineData part for Gemini
+                    for i, img in enumerate(images):
+                        buffered = io.BytesIO()
+                        img.save(buffered, format="PNG") # Save image to a byte buffer
+                        image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                        image_parts_for_gemini.append({
+                            "inlineData": {
+                                "mimeType": "image/png",
+                                "data": image_base64
+                            }
+                        })
+                        # Limit pages sent to Gemini to avoid context window issues for very large PDFs
+                        if i >= 4: # Process first 5 pages (0-indexed) to avoid very long requests
+                            print("Limiting scanned PDF processing to the first 5 pages.")
+                            break
+                    
+                    if not image_parts_for_gemini:
+                        return {"error": "Failed to convert PDF pages to images. Ensure Poppler is installed and accessible."}
+
+                    # Send the prompt with multiple image parts to Gemini
+                    demographics_data = call_gemini_api(prompt_base, image_parts=image_parts_for_gemini)
+
+                except Exception as e:
+                    print(f"Error converting PDF to images or sending to Gemini: {e}")
+                    return {"error": f"Failed to process scanned PDF: {e}. Ensure 'Poppler' is installed and its path is configured if needed."}
         
         elif file_extension == 'docx':
             extracted_text = extract_text_from_docx(file_path)
@@ -540,41 +546,38 @@ def process_document(file_path, original_filename):
             return {"error": "Unsupported file type. Please upload a PDF, image (PNG, JPG, JPEG), or DOCX."}
 
         if demographics_data and not demographics_data.get("error"):
-            # Determine filenames for output JSON and PDF based on patient's full name
             full_name = demographics_data.get('fullName', 'NA').strip()
             
-            # Sanitize the name to create a valid filename
+            # --- Updated filename logic for 'no_name.pdf/json/fhir.json' ---
             if full_name.lower() == 'na' or not full_name:
                 base_filename = "no_name"
             else:
+                # Sanitize the name to create a valid filename: keep alphanumeric and underscores
                 sanitized_name = ''.join(c if c.isalnum() else '_' for c in full_name)
-                # Remove consecutive underscores and leading/trailing underscores
+                # Replace multiple underscores with a single one, and strip leading/trailing
                 sanitized_name = '_'.join(filter(None, sanitized_name.split('_')))
-                if not sanitized_name: # Fallback if sanitization results in an empty string
-                    sanitized_name = "demographics_unknown"
+                if not sanitized_name:
+                    sanitized_name = "demographics_unknown" # Fallback if sanitization results in empty string
                 base_filename = sanitized_name
+            # --- End filename logic ---
 
-            json_filename = f"{base_filename}.json" # Raw extracted data JSON
-            pdf_filename = f"{base_filename}.pdf" # PDF report
-            fhir_json_filename = f"{base_filename}_fhir.json" # FHIR R4 Bundle JSON
+            json_filename = f"{base_filename}.json"
+            pdf_filename = f"{base_filename}.pdf"
+            fhir_json_filename = f"{base_filename}_fhir.json"
 
             json_path = os.path.join(GENERATED_FILES_DIR, json_filename)
             pdf_path_output = os.path.join(GENERATED_FILES_DIR, pdf_filename)
             fhir_json_path = os.path.join(GENERATED_FILES_DIR, fhir_json_filename)
 
-            # Save extracted demographics to JSON
             with open(json_path, 'w') as f:
                 json.dump(demographics_data, f, indent=4)
             print(f"Demographics JSON saved to: {json_path}")
 
-            # Construct and save FHIR R4 Bundle
             fhir_bundle = construct_fhir_bundle(demographics_data)
             with open(fhir_json_path, 'w') as f:
                 json.dump(fhir_bundle, f, indent=4)
             print(f"FHIR R4 JSON bundle generated and saved to: {fhir_json_path}")
 
-
-            # Generate PDF from demographics
             generate_demographics_pdf(demographics_data, pdf_path_output)
             print(f"Demographics PDF generated at: {pdf_path_output}")
 
@@ -582,7 +585,7 @@ def process_document(file_path, original_filename):
                 "message": "Document processed successfully!",
                 "json_filename": json_filename,
                 "pdf_filename": pdf_filename,
-                "fhir_json_filename": fhir_json_filename # Return new filename
+                "fhir_json_filename": fhir_json_filename
             }
         else:
             return demographics_data
@@ -603,7 +606,6 @@ def generate_demographics_pdf(data, output_pdf_path):
     doc = SimpleDocTemplate(output_pdf_path, pagesize=letter)
     styles = getSampleStyleSheet()
 
-    # Define custom paragraph styles for consistent formatting in the PDF
     h1_style = ParagraphStyle(
         'h1_custom',
         parent=styles['h1'],
@@ -642,7 +644,6 @@ def generate_demographics_pdf(data, output_pdf_path):
     story.append(Paragraph("Patient Demographics and Clinical Report", h1_style))
     story.append(Spacer(1, 0.2 * inch))
 
-    # Basic Information
     story.append(Paragraph("Basic Information", h2_style))
     for key, display_name in [
         ("fullName", "Full Name"),
@@ -655,7 +656,6 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # Contact Info
     story.append(Paragraph("Contact Information", h2_style))
     for key, display_name in [
         ("address", "Address"),
@@ -667,7 +667,6 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # Insurance Information
     story.append(Paragraph("Insurance Information", h2_style))
     for key, display_name in [
         ("insuranceProvider", "Provider"),
@@ -679,7 +678,6 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # Medical Service Details
     story.append(Paragraph("Medical Service Details", h2_style))
     for key, display_name in [
         ("serviceRequestDetails", "Service Request Details"),
@@ -690,7 +688,6 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # Clinical Context & History
     story.append(Paragraph("Clinical Context & History", h2_style))
     for key, display_name in [
         ("encounterInfo", "Encounter Information (Diagnoses etc.)"),
@@ -703,7 +700,6 @@ def generate_demographics_pdf(data, output_pdf_path):
 
     story.append(Spacer(1, 0.2 * inch))
 
-    # Other Relevant Info
     other_info = data.get("otherRelevantInfo", "NA")
     if other_info and other_info != 'NA':
         story.append(Paragraph("Other Relevant Information", h2_style))
