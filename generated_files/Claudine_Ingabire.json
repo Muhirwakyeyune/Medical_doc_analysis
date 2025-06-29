@@ -1,0 +1,19 @@
+{
+    "fullName": "Claudine Ingabire",
+    "dateOfBirth": "NA",
+    "gender": "Female",
+    "address": "Rubavu, Western Province, Rwanda",
+    "phoneNumber": "+250 788 456 789",
+    "email": "NA",
+    "insuranceProvider": "NA",
+    "policyNumber": "NA",
+    "medicalRecordNumber": "NA",
+    "serviceRequestDetails": "Normal delivery",
+    "specimenInfo": "NA",
+    "coverageInfo": "NA",
+    "encounterInfo": "Active labor, third trimester pregnancy",
+    "observationInfo": "Healthy baby girl weighing 3.2 kilograms",
+    "procedureHistory": "Vaccination",
+    "medicationRequestHistory": "NA",
+    "otherRelevantInfo": "Delivered at Gisenyi District Hospital on May 26, 2025"
+}

@@ -1,16 +1,16 @@
 {
     "resourceType": "Bundle",
-    "id": "095a306b-f88b-4520-96d6-55149f0129a0",
+    "id": "e2895ad6-54b7-4e08-a6c8-1634dcfbe8c8",
     "meta": {
-        "lastUpdated": "2025-06-28T09:45:47.263243+00:00"
+        "lastUpdated": "2025-06-28T17:00:46.943615+00:00"
     },
     "type": "collection",
     "entry": [
         {
-            "fullUrl": "urn:uuid:e503b70e-601e-46a9-88f9-539e69827bb9",
+            "fullUrl": "urn:uuid:ff3cc809-7f2e-47c4-8c6d-e2b2abe9c2f9",
             "resource": {
                 "resourceType": "Patient",
-                "id": "e503b70e-601e-46a9-88f9-539e69827bb9",
+                "id": "ff3cc809-7f2e-47c4-8c6d-e2b2abe9c2f9",
                 "meta": {
                     "profile": [
                         "http://hl7.org/fhir/StructureDefinition/Patient"
@@ -27,64 +27,27 @@
                                 }
                             ]
                         },
-                        "value": "202122206418"
+                        "value": "1 2005 80031472 0 31"
                     }
                 ],
                 "name": [
                     {
                         "use": "official",
-                        "family": "ELIE",
+                        "family": "Elie",
                         "given": [
                             "NZAYIKUNDA"
                         ]
                     }
                 ],
-                "gender": "unknown",
-                "birthDate": null,
-                "address": [],
-                "telecom": [
+                "gender": "m",
+                "birthDate": "28/02/2005",
+                "address": [
                     {
-                        "system": "phone",
-                        "value": "0788875779",
-                        "use": "home"
-                    },
-                    {
-                        "system": "email",
-                        "value": "infoefotec@gmail.com",
-                        "use": "home"
+                        "use": "home",
+                        "text": "RUBAVU/RUGERERO"
                     }
-                ]
-            }
-        },
-        {
-            "fullUrl": "urn:uuid:bf85d1a3-d351-4353-b057-601196729d8f",
-            "resource": {
-                "resourceType": "ServiceRequest",
-                "id": "bf85d1a3-d351-4353-b057-601196729d8f",
-                "meta": {
-                    "profile": [
-                        "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
-                    ]
-                },
-                "status": "active",
-                "intent": "order",
-                "subject": {
-                    "reference": "Patient/e503b70e-601e-46a9-88f9-539e69827bb9"
-                },
-                "requester": {
-                    "display": "Extracted from Document"
-                },
-                "code": {
-                    "coding": [
-                        {
-                            "system": "http://snomed.info/sct",
-                            "code": "394581000",
-                            "display": "Medical service"
-                        }
-                    ],
-                    "text": "STUDENT ACADEMIC REPORT"
-                },
-                "authoredOn": "2025-06-28T09:45:47.263172+00:00"
+                ],
+                "telecom": []
             }
         }
     ]

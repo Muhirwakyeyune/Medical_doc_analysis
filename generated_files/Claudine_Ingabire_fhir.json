@@ -1,0 +1,147 @@
+{
+    "resourceType": "Bundle",
+    "id": "7e324263-7db5-4d6e-a022-22d1538117c9",
+    "meta": {
+        "lastUpdated": "2025-06-28T17:27:32.923031+00:00"
+    },
+    "type": "collection",
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:23478bfb-b8b5-4862-9084-ac85a1b98dd6",
+            "resource": {
+                "resourceType": "Patient",
+                "id": "23478bfb-b8b5-4862-9084-ac85a1b98dd6",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Patient"
+                    ]
+                },
+                "identifier": [],
+                "name": [
+                    {
+                        "use": "official",
+                        "family": "Ingabire",
+                        "given": [
+                            "Claudine"
+                        ]
+                    }
+                ],
+                "gender": "female",
+                "birthDate": null,
+                "address": [
+                    {
+                        "use": "home",
+                        "text": "Rubavu, Western Province, Rwanda"
+                    }
+                ],
+                "telecom": [
+                    {
+                        "system": "phone",
+                        "value": "+250 788 456 789",
+                        "use": "home"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:ed12bae6-9960-4de0-864f-a6aa38176648",
+            "resource": {
+                "resourceType": "ServiceRequest",
+                "id": "ed12bae6-9960-4de0-864f-a6aa38176648",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
+                    ]
+                },
+                "status": "active",
+                "intent": "order",
+                "subject": {
+                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                },
+                "requester": {
+                    "display": "Extracted from Document"
+                },
+                "code": {
+                    "coding": [
+                        {
+                            "system": "http://snomed.info/sct",
+                            "code": "394581000",
+                            "display": "Medical service"
+                        }
+                    ],
+                    "text": "Normal delivery"
+                },
+                "authoredOn": "2025-06-28T17:27:32.922936+00:00"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:fd03cf4e-7305-4b2f-a9c0-017c05c3f939",
+            "resource": {
+                "resourceType": "Encounter",
+                "id": "fd03cf4e-7305-4b2f-a9c0-017c05c3f939",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Encounter"
+                    ]
+                },
+                "status": "finished",
+                "class": {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                    "code": "AMB",
+                    "display": "ambulatory"
+                },
+                "subject": {
+                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                },
+                "period": {
+                    "start": "2025-06-28T17:27:32.922983+00:00"
+                },
+                "reasonCode": [
+                    {
+                        "text": "Active labor, third trimester pregnancy"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:67b2ff1f-1a7f-4e03-89a2-a62f50a6def4",
+            "resource": {
+                "resourceType": "Observation",
+                "id": "67b2ff1f-1a7f-4e03-89a2-a62f50a6def4",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Observation"
+                    ]
+                },
+                "status": "final",
+                "code": {
+                    "text": "Healthy baby girl weighing 3.2 kilograms"
+                },
+                "subject": {
+                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                },
+                "effectiveDateTime": "2025-06-28T17:27:32.922999+00:00"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:7a89e99f-b822-4c5d-8896-a3a32906d80f",
+            "resource": {
+                "resourceType": "Procedure",
+                "id": "7a89e99f-b822-4c5d-8896-a3a32906d80f",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Procedure"
+                    ]
+                },
+                "status": "completed",
+                "code": {
+                    "text": "Vaccination"
+                },
+                "subject": {
+                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                },
+                "performedDateTime": "2025-06-28T17:27:32.923013+00:00"
+            }
+        }
+    ]
+}

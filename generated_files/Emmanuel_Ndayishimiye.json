@@ -1,0 +1,19 @@
+{
+    "fullName": "Emmanuel Ndayishimiye",
+    "dateOfBirth": "NA",
+    "gender": "NA",
+    "address": "Kacyiru area of Kigali",
+    "phoneNumber": "+250 788 000 111",
+    "email": "NA",
+    "insuranceProvider": "NA",
+    "policyNumber": "NA",
+    "medicalRecordNumber": "NA",
+    "serviceRequestDetails": "ultrasound",
+    "specimenInfo": "NA",
+    "coverageInfo": "NA",
+    "encounterInfo": "acute appendicitis",
+    "observationInfo": "sharp pain in his lower abdomen",
+    "procedureHistory": "surgery",
+    "medicationRequestHistory": "medication to manage his pain, prescription",
+    "otherRelevantInfo": "Visited Kigali Hope Medical Center on June 12, 2025, and was discharged on June 15, 2025."
+}

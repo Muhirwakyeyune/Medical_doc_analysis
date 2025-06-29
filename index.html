@@ -4,20 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Document Auto-Accessioning</title>
+    <!-- Tailwind CSS CDN for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Inter for clean, professional typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
+            /* Consistent background gradient with subtle animation from home.html */
+            background: linear-gradient(135deg, #a7e6ff 0%, #7ecbff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-x: hidden;
+            position: relative;
         }
+
+        /* Subtle background animation */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
+                        radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            animation: backgroundPan 20s infinite alternate linear;
+            z-index: -1;
+        }
+
+        @keyframes backgroundPan {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+
         .container {
-            max-width: 800px;
+            /* Elevated, more complex shadow and blur for depth and crispness */
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.3), 0 15px 30px -10px rgba(0, 0, 0, 0.15);
+            border-radius: 2.5rem; /* Even more rounded corners */
+            max-width: 90%;
+            width: 900px;
+            animation: fadeInSlideUp 1s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px) scale(0.98);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
+
+        /* Keyframes for fade-in and slide-up animation */
+        @keyframes fadeInSlideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         /* Custom spinner for loading */
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #3b82f6; /* Blue spinner */
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #ffffff;
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -27,104 +78,413 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Enhanced button hover effects */
+        .btn-fancy-hover {
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            background-size: 200% auto;
+            transform: translateZ(0); /* Force GPU acceleration */
+        }
+        .btn-fancy-hover:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.25), 0 5px 10px -2px rgba(0, 0, 0, 0.1);
+            background-position: right center;
+            filter: brightness(1.1);
+        }
+        .btn-fancy-hover:active {
+            transform: translateY(-2px) scale(0.99);
+            filter: brightness(0.9);
+        }
+
+        /* File upload area hover and drag-over effects */
+        .upload-area-hover {
+            transition: all 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .upload-area-hover.drag-over {
+            border-color: #4f46e5; /* Indigo-600 */
+            background-color: #e0e7ff; /* Indigo-100 */
+            box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.4); /* Stronger ring effect */
+            transform: scale(1.01);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease-in-out;
+        }
+        .loading-overlay p {
+            color: white;
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+
+        /* Modal Styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+        .modal-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+        .modal-message {
+            font-size: 1.15rem;
+            color: #4b5563; /* gray-700 */
+            margin-bottom: 2rem;
+        }
+        .modal-download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280; /* gray-500 */
+            cursor: pointer;
+            transition: color 0.2s ease-in-out;
+        }
+        .modal-close-button:hover {
+            color: #1f2937; /* gray-900 */
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            .container {
+                padding: 2.5rem;
+                border-radius: 2rem;
+            }
+            h1 {
+                font-size: 2.8rem;
+                line-height: 1.2;
+            }
+            p {
+                font-size: 1.1rem;
+                margin-bottom: 2rem;
+            }
+            label[for="document-upload"] {
+                font-size: 1.25rem;
+            }
+            .upload-area-hover {
+                height: 180px;
+            }
+            .upload-area-hover svg {
+                width: 3rem;
+                height: 3rem;
+            }
+            .upload-area-hover p.text-2xl {
+                font-size: 1.15rem;
+            }
+            .upload-area-hover p.text-base {
+                font-size: 0.85rem;
+            }
+            button {
+                font-size: 1.25rem;
+                padding: 0.9rem 1.8rem;
+            }
+            #status-message {
+                font-size: 1.05rem;
+            }
+            .modal-content {
+                padding: 1.5rem;
+                border-radius: 1rem;
+            }
+            .modal-title {
+                font-size: 1.75rem;
+            }
+            .modal-message {
+                font-size: 1rem;
+            }
+            .modal-download-buttons button {
+                font-size: 1.1rem;
+                padding: 0.75rem 1.5rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            p {
+                font-size: 0.9rem;
+            }
+            label[for="document-upload"] {
+                font-size: 1.125rem;
+            }
+            .upload-area-hover {
+                height: 160px;
+                border-radius: 1.25rem;
+            }
+            .upload-area-hover svg {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+            .upload-area-hover p.text-2xl {
+                font-size: 1rem;
+            }
+            .upload-area-hover p.text-base {
+                font-size: 0.75rem;
+            }
+            button {
+                font-size: 1.1rem;
+                padding: 0.75rem 1.5rem;
+                border-radius: 0.75rem;
+            }
+        }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="container bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
-            <span class="text-blue-600">Medical Document</span> Processor
+<body>
+    <!-- Main Content Container -->
+    <div class="container bg-white/90 p-12 rounded-3xl shadow-3xl text-center relative z-10">
+        <!-- Main Heading with Gradient Text -->
+        <h1 class="text-5xl font-extrabold text-gray-900 mb-6 text-center leading-tight">
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Medical Document</span> <br class="sm:hidden"> Processor
         </h1>
-        <p class="text-lg text-gray-700 mb-8 text-center">
-            Upload a medical requisition document (PDF, image, or Word document) to extract and organize demographic and clinical information.
+        <!-- Descriptive paragraph -->
+        <p class="text-xl text-gray-700 mb-10 text-center leading-relaxed font-light">
+            Upload any medical requisition (PDF, image, or DOCX) to leverage AI-powered extraction of essential demographic and clinical data, and generate structured FHIR R4 bundles.
         </p>
 
-        <div class="space-y-6">
+        <div class="space-y-8">
             <!-- File Upload Section -->
             <div>
-                <label for="document-upload" class="block text-xl font-semibold text-gray-800 mb-3">
-                    Upload Document
+                <label for="document-upload" class="block text-2xl font-semibold text-gray-800 mb-4 text-center">
+                    Secure Document Upload
                 </label>
-                <div class="flex items-center justify-center w-full">
-                    <label for="document-upload" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition duration-300 ease-in-out">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v8"></path></svg>
-                            <p class="mb-2 text-lg text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                            <p class="text-sm text-gray-500">PDF, PNG, JPG, DOCX (Max 5MB)</p>
+                <div id="drop-area" class="flex items-center justify-center w-full">
+                    <label for="document-upload" class="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-blue-500 rounded-3xl cursor-pointer bg-blue-50 hover:bg-blue-100 transition duration-300 ease-in-out text-blue-700 hover:text-blue-900 upload-area-hover">
+                        <div class="flex flex-col items-center justify-center pt-8 pb-9">
+                            <svg class="w-14 h-14 mb-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v8"></path></svg>
+                            <p class="mb-2 text-2xl font-semibold"><span class="text-blue-800">Click to browse</span> or drag & drop</p>
+                            <p class="text-base text-gray-600">Supported formats: PDF, PNG, JPG, DOCX (Max 5MB file size)</p>
                         </div>
                         <input id="document-upload" type="file" class="hidden" accept=".pdf, .png, .jpg, .jpeg, .docx" />
                     </label>
                 </div>
-                <div id="file-name-display" class="text-center text-gray-600 mt-2 text-md font-medium">No file chosen</div>
+                <div id="file-name-display" class="text-center text-gray-700 mt-4 text-xl font-medium">No file chosen</div>
             </div>
 
             <!-- Process Button -->
-            <button id="process-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 flex items-center justify-center">
+            <button id="process-button" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold py-5 px-6 rounded-2xl text-2xl tracking-wide shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-75 flex items-center justify-center btn-fancy-hover">
                 <span id="button-text">Process Document</span>
-                <div id="loading-spinner" class="spinner ml-3 hidden"></div>
-            </button>
-
-            <!-- Status and Download Section -->
-            <div id="status-message" class="text-center text-lg mt-4 hidden"></div>
-
-            <button id="download-pdf-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 mt-4 hidden">
-                Download Demographics PDF
-            </button>
-
-            <!-- NEW: Download FHIR R4 JSON Button -->
-            <button id="download-fhir-json-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg text-xl transition duration-300 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 mt-4 hidden">
-                Download FHIR R4 JSON Bundle
+                <div id="button-spinner" class="spinner ml-4 hidden"></div> <!-- Changed ID to avoid conflict if multiple spinners -->
             </button>
         </div>
     </div>
 
+    <!-- Loading Overlay (hidden by default) -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p>Processing document, please wait...</p>
+    </div>
+
+    <!-- Modal Overlay (hidden by default) -->
+    <div id="response-modal-overlay" class="modal-overlay">
+        <div class="modal-content relative">
+            <button id="modal-close-button" class="modal-close-button">&times;</button>
+            <h2 id="modal-title" class="modal-title"></h2>
+            <p id="modal-message" class="modal-message"></p>
+            <div id="modal-download-buttons" class="modal-download-buttons">
+                <button id="modal-download-pdf-button" class="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-75 btn-fancy-hover">
+                    Download Demographics PDF
+                </button>
+                <button id="modal-download-fhir-json-button" class="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-purple-400 focus:ring-opacity-75 btn-fancy-hover">
+                    Download FHIR R4 JSON Bundle
+                </button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
+        // Get references to all necessary HTML elements
         const fileInput = document.getElementById('document-upload');
         const fileNameDisplay = document.getElementById('file-name-display');
         const processButton = document.getElementById('process-button');
         const buttonText = document.getElementById('button-text');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const statusMessage = document.getElementById('status-message');
-        const downloadPdfButton = document.getElementById('download-pdf-button');
-        const downloadFhirJsonButton = document.getElementById('download-fhir-json-button'); // NEW
+        const buttonSpinner = document.getElementById('button-spinner'); // Spinner specifically for the button
+        const dropArea = document.getElementById('drop-area'); // Reference to the drop area div
 
-        let uploadedFile = null;
+        // Loading Overlay elements
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        // Modal elements
+        const responseModalOverlay = document.getElementById('response-modal-overlay');
+        const modalCloseButton = document.getElementById('modal-close-button');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalDownloadButtons = document.getElementById('modal-download-buttons');
+        const modalDownloadPdfButton = document.getElementById('modal-download-pdf-button');
+        const modalDownloadFhirJsonButton = document.getElementById('modal-download-fhir-json-button');
+
+        let uploadedFile = null; // Variable to store the selected file
+
+        // Function to show the loading overlay
+        function showLoadingOverlay() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        // Function to hide the loading overlay
+        function hideLoadingOverlay() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Function to show the response modal
+        function showResponseModal(title, message, isSuccess, pdfFilename = null, fhirJsonFilename = null) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalDownloadButtons.classList.add('hidden'); // Hide buttons by default
+
+            if (isSuccess) {
+                // If successful, show download buttons and set filenames
+                modalDownloadButtons.classList.remove('hidden');
+                modalDownloadPdfButton.dataset.filename = pdfFilename;
+                modalDownloadFhirJsonButton.dataset.filename = fhirJsonFilename;
+                modalTitle.classList.remove('text-red-600');
+                modalTitle.classList.add('text-green-600');
+            } else {
+                // If error, ensure buttons are hidden and set title color to red
+                modalDownloadButtons.classList.add('hidden');
+                modalTitle.classList.remove('text-green-600');
+                modalTitle.classList.add('text-red-600');
+            }
+            responseModalOverlay.classList.add('show'); // Show the modal
+        }
+
+        // Function to hide the response modal
+        function hideResponseModal() {
+            responseModalOverlay.classList.remove('show');
+            // Optional: clear dynamic content if needed
+            modalTitle.textContent = '';
+            modalMessage.textContent = '';
+            modalDownloadPdfButton.dataset.filename = '';
+            modalDownloadFhirJsonButton.dataset.filename = '';
+        }
+
+        // Event listener for modal close button
+        modalCloseButton.addEventListener('click', hideResponseModal);
+        // Event listener for clicking outside the modal content to close it
+        responseModalOverlay.addEventListener('click', (event) => {
+            if (event.target === responseModalOverlay) {
+                hideResponseModal();
+            }
+        });
 
         // Event listener for file input change
         fileInput.addEventListener('change', (event) => {
             uploadedFile = event.target.files[0];
             if (uploadedFile) {
                 fileNameDisplay.textContent = `File selected: ${uploadedFile.name}`;
-                // Reset UI state
-                statusMessage.classList.add('hidden');
-                downloadPdfButton.classList.add('hidden');
-                downloadFhirJsonButton.classList.add('hidden'); // NEW: Hide FHIR button
+                // Hide any existing modal or loading overlay
+                hideResponseModal();
+                hideLoadingOverlay(); 
                 processButton.disabled = false; // Enable process button
                 processButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                processButton.classList.add('btn-fancy-hover'); // Re-add hover effect
             } else {
                 fileNameDisplay.textContent = 'No file chosen';
                 uploadedFile = null;
                 processButton.disabled = true; // Disable process button
                 processButton.classList.add('opacity-50', 'cursor-not-allowed');
+                processButton.classList.remove('btn-fancy-hover'); // Remove hover effect when disabled
             }
         });
+
+        // Drag and drop event listeners
+        dropArea.addEventListener('dragover', (event) => {
+            event.preventDefault(); // Prevent default to allow drop
+            dropArea.classList.add('drag-over'); // Add visual feedback
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('drag-over'); // Remove visual feedback
+        });
+
+        dropArea.addEventListener('drop', (event) => {
+            event.preventDefault(); // Prevent default browser behavior (e.g., opening file)
+            dropArea.classList.remove('drag-over'); // Remove visual feedback
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files; // Assign dropped files to the input
+                // Manually trigger the change event on the file input
+                const changeEvent = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(changeEvent);
+            }
+        });
+
 
         // Event listener for process button click
         processButton.addEventListener('click', async () => {
             if (!uploadedFile) {
-                statusMessage.textContent = 'Please select a document to upload.';
-                statusMessage.className = 'text-center text-lg mt-4 text-red-600';
-                statusMessage.classList.remove('hidden');
+                showResponseModal('Upload Required', 'Please select a document to upload.', false);
                 return;
             }
 
             // Show loading state
             buttonText.textContent = 'Processing...';
-            loadingSpinner.classList.remove('hidden');
+            buttonSpinner.classList.remove('hidden');
             processButton.disabled = true;
             processButton.classList.add('opacity-50', 'cursor-not-allowed');
-            statusMessage.classList.add('hidden');
-            downloadPdfButton.classList.add('hidden');
-            downloadFhirJsonButton.classList.add('hidden'); // NEW: Hide FHIR button
+            processButton.classList.remove('btn-fancy-hover');
+            showLoadingOverlay(); // Show the full-screen loading overlay
 
             const formData = new FormData();
             formData.append('document', uploadedFile);
@@ -138,36 +498,27 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    statusMessage.textContent = result.message;
-                    statusMessage.className = 'text-center text-lg mt-4 text-green-600';
-                    statusMessage.classList.remove('hidden');
-                    downloadPdfButton.classList.remove('hidden');
-                    downloadFhirJsonButton.classList.remove('hidden'); // NEW: Show FHIR button
-                    // Store the generated file names for download
-                    downloadPdfButton.dataset.filename = result.pdf_filename;
-                    downloadFhirJsonButton.dataset.filename = result.fhir_json_filename; // NEW: Store FHIR filename
+                    showResponseModal('Success!', result.message, true, result.pdf_filename, result.fhir_json_filename);
                 } else {
-                    statusMessage.textContent = `Error: ${result.error || 'Something went wrong.'}`;
-                    statusMessage.className = 'text-center text-lg mt-4 text-red-600';
-                    statusMessage.classList.remove('hidden');
+                    showResponseModal('Error!', `Error: ${result.error || 'Something went wrong.'}`, false);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                statusMessage.textContent = 'An unexpected error occurred during processing.';
-                statusMessage.className = 'text-center text-lg mt-4 text-red-600';
-                statusMessage.classList.remove('hidden');
+                showResponseModal('Error!', 'An unexpected error occurred during processing. Please try again.', false);
             } finally {
-                // Reset button state
+                // Reset button state and hide loading overlay
                 buttonText.textContent = 'Process Document';
-                loadingSpinner.classList.add('hidden');
+                buttonSpinner.classList.add('hidden');
                 processButton.disabled = false;
                 processButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                processButton.classList.add('btn-fancy-hover');
+                hideLoadingOverlay();
             }
         });
 
-        // Event listener for download PDF button click
-        downloadPdfButton.addEventListener('click', () => {
-            const pdfFilename = downloadPdfButton.dataset.filename;
+        // Event listener for download PDF button click (inside modal)
+        modalDownloadPdfButton.addEventListener('click', () => {
+            const pdfFilename = modalDownloadPdfButton.dataset.filename;
             if (pdfFilename) {
                 const link = document.createElement('a');
                 link.href = `/download_pdf?filename=${pdfFilename}`;
@@ -175,19 +526,21 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                hideResponseModal(); // Close modal after download
             }
         });
 
-        // NEW: Event listener for download FHIR JSON button click
-        downloadFhirJsonButton.addEventListener('click', () => {
-            const fhirJsonFilename = downloadFhirJsonButton.dataset.filename;
+        // Event listener for download FHIR JSON button click (inside modal)
+        modalDownloadFhirJsonButton.addEventListener('click', () => {
+            const fhirJsonFilename = modalDownloadFhirJsonButton.dataset.filename;
             if (fhirJsonFilename) {
                 const link = document.createElement('a');
-                link.href = `/download_fhir_json?filename=${fhirJsonFilename}`; // NEW route
+                link.href = `/download_fhir_json?filename=${fhirJsonFilename}`;
                 link.download = fhirJsonFilename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                hideResponseModal(); // Close modal after download
             }
         });
     </script>

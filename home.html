@@ -3,28 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome - Medical Services</title>
+    <title>Welcome to Medical Services</title>
+    <!-- Tailwind CSS CDN for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Inter for clean, professional typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
+            /* Dynamic background gradient with subtle animation */
+            background: linear-gradient(135deg, #a7e6ff 0%, #7ecbff 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column; /* Allow header/footer and main content */
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-x: hidden; /* Prevent horizontal scrollbars */
+            position: relative; /* For pseudo-elements or background effects */
+        }
+
+        /* Subtle background animation */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
+                        radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            animation: backgroundPan 20s infinite alternate linear;
+            z-index: -1;
+        }
+
+        @keyframes backgroundPan {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+
+        .container {
+            /* Elevated, more complex shadow for depth and crispness */
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.3), 0 15px 30px -10px rgba(0, 0, 0, 0.15);
+            border-radius: 2.5rem; /* Even more rounded corners */
+            max-width: 90%;
+            width: 900px; /* Wider container for more content */
+            animation: fadeInSlideUp 1s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px) scale(0.98);
+            position: relative;
+            overflow: hidden; /* Important for inner shadows/gradients */
+            border: 1px solid rgba(255, 255, 255, 0.5); /* More prominent light border */
+            backdrop-filter: blur(5px); /* Subtle blur effect for content over background */
+            -webkit-backdrop-filter: blur(5px); /* Safari support */
+        }
+
+        /* Keyframes for fade-in and slide-up animation */
+        @keyframes fadeInSlideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Enhanced button hover effect with light aura */
+        .btn-fancy-hover {
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            background-size: 200% auto;
+            transform: translateZ(0); /* Force GPU acceleration */
+        }
+        .btn-fancy-hover:hover {
+            transform: translateY(-7px) scale(1.05); /* More pronounced lift and scale */
+            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+            background-position: right center;
+            filter: brightness(1.1); /* Slightly brighter on hover */
+        }
+        .btn-fancy-hover:active {
+            transform: translateY(-3px) scale(0.98);
+            filter: brightness(0.9);
+        }
+
+        /* Feature card styling */
+        .feature-card {
+            background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .container {
+                width: 80%; /* Adjust width for larger tablets */
+            }
+            h1 {
+                font-size: 4.5rem; /* Adjusted for larger tablets */
+            }
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 columns on tablets */
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1.5rem;
+            }
+            .container {
+                padding: 2.5rem;
+                border-radius: 2rem;
+            }
+            h1 {
+                font-size: 3.5rem; /* Adjusted for smaller tablets */
+                line-height: 1.2;
+            }
+            p {
+                font-size: 1.25rem; /* Adjusted for smaller tablets */
+                margin-bottom: 2rem;
+            }
+            .feature-grid {
+                grid-template-columns: 1fr; /* Single column on mobile */
+            }
+            .feature-card {
+                padding: 1.5rem;
+            }
+            .feature-card svg {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+            .feature-card h3 {
+                font-size: 1.25rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            .container {
+                padding: 2rem;
+                border-radius: 1.5rem;
+            }
+            h1 {
+                font-size: 2.5rem; /* Adjusted for mobile */
+            }
+            p {
+                font-size: 1rem; /* Adjusted for mobile */
+            }
+            a {
+                padding: 0.9rem 1.8rem;
+                font-size: 1.1rem;
+            }
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="container bg-white p-8 rounded-xl shadow-lg border border-gray-200 text-center">
-        <h1 class="text-5xl font-extrabold text-gray-900 mb-8">
-            <span class="text-blue-600">Welcome to</span> Medical Services
+<body>
+    <!-- Header Section (Subtle and professional) -->
+    <header class="w-full max-w-5xl px-8 py-4 mb-8 bg-white/70 backdrop-blur-sm rounded-full shadow-lg text-center z-20"
+            style="animation: fadeInDown 0.8s ease-out forwards; opacity: 0; transform: translateY(-20px);">
+        <h2 class="text-2xl font-bold text-gray-800">
+            Data AI <span class="text-blue-600">Health Informations</span>
+        </h2>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="container bg-white/90 p-12 rounded-3xl shadow-3xl text-center relative z-10">
+        <!-- Main Heading with Gradient Text -->
+        <h1 class="text-7xl font-extrabold text-gray-900 mb-8 leading-tight sm:text-6xl">
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-purple-700">Welcome to</span>
+            <br class="hidden sm:inline"> <span class="font-black">Medical Services</span>
         </h1>
-        <p class="text-lg text-gray-700 mb-10 max-w-xl mx-auto">
-            Explore our automated services for efficient medical document processing and data management.
+        <!-- Engaging Introductory Paragraph -->
+        <p class="text-2xl text-gray-700 mb-14 max-w-3xl mx-auto leading-relaxed font-light">
+            Empowering healthcare professionals with intelligent automation. Seamlessly extract, standardize, and manage crucial patient information from diverse document types.
         </p>
 
-        <a href="/demographics" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-xl transition duration-300 ease-in-out shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
-            Go to Medical Demographics
+        <!-- Call-to-action Button -->
+        <a href="/demographics" class="inline-block bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-extrabold py-5 px-12 rounded-full text-2xl tracking-wide btn-fancy-hover transform-gpu">
+            Start Processing
         </a>
+
+        <!-- Features Section -->
+        <div class="mt-20 text-left">
+            <h2 class="text-4xl font-bold text-gray-800 mb-10 text-center"> Capabilities</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 feature-grid">
+                <!-- Feature Card 1 -->
+                <div class="feature-card p-6 flex flex-col items-center text-center">
+                    <svg class="w-10 h-10 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Automated Data Extraction</h3>
+                    <p class="text-gray-600">Leverage AI to accurately pull key patient demographics and clinical details from various document formats.</p>
+                </div>
+                <!-- Feature Card 2 -->
+                <div class="feature-card p-6 flex flex-col items-center text-center">
+                    <svg class="w-10 h-10 text-purple-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zM13 10V3.5a1.5 1.5 0 013 0V10m-3 0h3m-3 0V9"></path></svg>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">FHIR R4 Standardization</h3>
+                    <p class="text-gray-600">Transform extracted data into standardized FHIR R4 JSON bundles for seamless integration with healthcare systems.</p>
+                </div>
+                <!-- Feature Card 3 -->
+                <div class="feature-card p-6 flex flex-col items-center text-center">
+                    <svg class="w-10 h-10 text-green-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.747 0-3.332.477-4.5 1.253"></path></svg>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Multi-Format Support</h3>
+                    <p class="text-gray-600">Process documents from various sources including scanned PDFs, digital PDFs, images (JPG/PNG), and DOCX files.</p>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Footer Section (Subtle and informational) -->
+    <footer class="w-full max-w-5xl px-8 py-4 mt-8 bg-white/70 backdrop-blur-sm rounded-full shadow-lg text-center text-gray-600 text-sm z-20"
+            style="animation: fadeInUp 0.8s ease-out forwards; opacity: 0; transform: translateY(20px);">
+        &copy; 2025 Medical Health Solutions. All rights reserved.
+    </footer>
+
+    <style>
+        /* Header/Footer specific animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </body>
 </html>

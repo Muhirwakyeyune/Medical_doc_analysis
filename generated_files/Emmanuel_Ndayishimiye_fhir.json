@@ -1,0 +1,168 @@
+{
+    "resourceType": "Bundle",
+    "id": "287c6e86-e97c-4249-ba50-a8428c403679",
+    "meta": {
+        "lastUpdated": "2025-06-28T17:26:44.916974+00:00"
+    },
+    "type": "collection",
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:660c2b76-3706-4fd3-aed0-880ca04f9703",
+            "resource": {
+                "resourceType": "Patient",
+                "id": "660c2b76-3706-4fd3-aed0-880ca04f9703",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Patient"
+                    ]
+                },
+                "identifier": [],
+                "name": [
+                    {
+                        "use": "official",
+                        "family": "Ndayishimiye",
+                        "given": [
+                            "Emmanuel"
+                        ]
+                    }
+                ],
+                "gender": "unknown",
+                "birthDate": null,
+                "address": [
+                    {
+                        "use": "home",
+                        "text": "Kacyiru area of Kigali"
+                    }
+                ],
+                "telecom": [
+                    {
+                        "system": "phone",
+                        "value": "+250 788 000 111",
+                        "use": "home"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:44775294-6905-4e9b-8d5b-cc547b25a41b",
+            "resource": {
+                "resourceType": "ServiceRequest",
+                "id": "44775294-6905-4e9b-8d5b-cc547b25a41b",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
+                    ]
+                },
+                "status": "active",
+                "intent": "order",
+                "subject": {
+                    "reference": "Patient/660c2b76-3706-4fd3-aed0-880ca04f9703"
+                },
+                "requester": {
+                    "display": "Extracted from Document"
+                },
+                "code": {
+                    "coding": [
+                        {
+                            "system": "http://snomed.info/sct",
+                            "code": "394581000",
+                            "display": "Medical service"
+                        }
+                    ],
+                    "text": "ultrasound"
+                },
+                "authoredOn": "2025-06-28T17:26:44.916860+00:00"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:e41fcb74-bd89-4837-87ba-68c5c0c416a0",
+            "resource": {
+                "resourceType": "Encounter",
+                "id": "e41fcb74-bd89-4837-87ba-68c5c0c416a0",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Encounter"
+                    ]
+                },
+                "status": "finished",
+                "class": {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                    "code": "AMB",
+                    "display": "ambulatory"
+                },
+                "subject": {
+                    "reference": "Patient/660c2b76-3706-4fd3-aed0-880ca04f9703"
+                },
+                "period": {
+                    "start": "2025-06-28T17:26:44.916917+00:00"
+                },
+                "reasonCode": [
+                    {
+                        "text": "acute appendicitis"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:7017e1a8-6285-469a-8921-6be90e98cdb3",
+            "resource": {
+                "resourceType": "Observation",
+                "id": "7017e1a8-6285-469a-8921-6be90e98cdb3",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Observation"
+                    ]
+                },
+                "status": "final",
+                "code": {
+                    "text": "sharp pain in his lower abdomen"
+                },
+                "subject": {
+                    "reference": "Patient/660c2b76-3706-4fd3-aed0-880ca04f9703"
+                },
+                "effectiveDateTime": "2025-06-28T17:26:44.916933+00:00"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:f847f929-24b1-49fc-990e-0d55cce403c7",
+            "resource": {
+                "resourceType": "Procedure",
+                "id": "f847f929-24b1-49fc-990e-0d55cce403c7",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/Procedure"
+                    ]
+                },
+                "status": "completed",
+                "code": {
+                    "text": "surgery"
+                },
+                "subject": {
+                    "reference": "Patient/660c2b76-3706-4fd3-aed0-880ca04f9703"
+                },
+                "performedDateTime": "2025-06-28T17:26:44.916946+00:00"
+            }
+        },
+        {
+            "fullUrl": "urn:uuid:b303c12d-7d6e-48c0-a24d-798a575a57e3",
+            "resource": {
+                "resourceType": "MedicationRequest",
+                "id": "b303c12d-7d6e-48c0-a24d-798a575a57e3",
+                "meta": {
+                    "profile": [
+                        "http://hl7.org/fhir/StructureDefinition/MedicationRequest"
+                    ]
+                },
+                "status": "active",
+                "intent": "order",
+                "medicationCodeableConcept": {
+                    "text": "medication to manage his pain, prescription"
+                },
+                "subject": {
+                    "reference": "Patient/660c2b76-3706-4fd3-aed0-880ca04f9703"
+                },
+                "authoredOn": "2025-06-28T17:26:44.916959+00:00"
+            }
+        }
+    ]
+}
