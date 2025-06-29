@@ -1,16 +1,16 @@
 {
     "resourceType": "Bundle",
-    "id": "7e324263-7db5-4d6e-a022-22d1538117c9",
+    "id": "eb33dc8b-5193-48b7-abc6-8fdecdf557d2",
     "meta": {
-        "lastUpdated": "2025-06-28T17:27:32.923031+00:00"
+        "lastUpdated": "2025-06-29T10:20:11.296700+00:00"
     },
     "type": "collection",
     "entry": [
         {
-            "fullUrl": "urn:uuid:23478bfb-b8b5-4862-9084-ac85a1b98dd6",
+            "fullUrl": "urn:uuid:e5e68dbd-21c0-4d63-b46c-aca4825c8fb4",
             "resource": {
                 "resourceType": "Patient",
-                "id": "23478bfb-b8b5-4862-9084-ac85a1b98dd6",
+                "id": "e5e68dbd-21c0-4d63-b46c-aca4825c8fb4",
                 "meta": {
                     "profile": [
                         "http://hl7.org/fhir/StructureDefinition/Patient"
@@ -34,20 +34,14 @@
                         "text": "Rubavu, Western Province, Rwanda"
                     }
                 ],
-                "telecom": [
-                    {
-                        "system": "phone",
-                        "value": "+250 788 456 789",
-                        "use": "home"
-                    }
-                ]
+                "telecom": []
             }
         },
         {
-            "fullUrl": "urn:uuid:ed12bae6-9960-4de0-864f-a6aa38176648",
+            "fullUrl": "urn:uuid:d229eb94-dc07-4406-b96b-bb4e12a76017",
             "resource": {
                 "resourceType": "ServiceRequest",
-                "id": "ed12bae6-9960-4de0-864f-a6aa38176648",
+                "id": "d229eb94-dc07-4406-b96b-bb4e12a76017",
                 "meta": {
                     "profile": [
                         "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
@@ -56,7 +50,7 @@
                 "status": "active",
                 "intent": "order",
                 "subject": {
-                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                    "reference": "Patient/e5e68dbd-21c0-4d63-b46c-aca4825c8fb4"
                 },
                 "requester": {
                     "display": "Extracted from Document"
@@ -71,14 +65,14 @@
                     ],
                     "text": "Normal delivery"
                 },
-                "authoredOn": "2025-06-28T17:27:32.922936+00:00"
+                "authoredOn": "2025-06-29T10:20:11.296615+00:00"
             }
         },
         {
-            "fullUrl": "urn:uuid:fd03cf4e-7305-4b2f-a9c0-017c05c3f939",
+            "fullUrl": "urn:uuid:c4e52cb0-5b31-4cc8-9d6c-cf6db55bf227",
             "resource": {
                 "resourceType": "Encounter",
-                "id": "fd03cf4e-7305-4b2f-a9c0-017c05c3f939",
+                "id": "c4e52cb0-5b31-4cc8-9d6c-cf6db55bf227",
                 "meta": {
                     "profile": [
                         "http://hl7.org/fhir/StructureDefinition/Encounter"
@@ -91,23 +85,23 @@
                     "display": "ambulatory"
                 },
                 "subject": {
-                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                    "reference": "Patient/e5e68dbd-21c0-4d63-b46c-aca4825c8fb4"
                 },
                 "period": {
-                    "start": "2025-06-28T17:27:32.922983+00:00"
+                    "start": "2025-06-29T10:20:11.296657+00:00"
                 },
                 "reasonCode": [
                     {
-                        "text": "Active labor, third trimester pregnancy"
+                        "text": "Admitted to Gisenyi District Hospital on May 25, 2025, in active labor, delivered on May 26, 2025, discharged on May 28, 2025."
                     }
                 ]
             }
         },
         {
-            "fullUrl": "urn:uuid:67b2ff1f-1a7f-4e03-89a2-a62f50a6def4",
+            "fullUrl": "urn:uuid:501b8f8e-d269-47c7-815f-354a3208e7fb",
             "resource": {
                 "resourceType": "Observation",
-                "id": "67b2ff1f-1a7f-4e03-89a2-a62f50a6def4",
+                "id": "501b8f8e-d269-47c7-815f-354a3208e7fb",
                 "meta": {
                     "profile": [
                         "http://hl7.org/fhir/StructureDefinition/Observation"
@@ -115,32 +109,33 @@
                 },
                 "status": "final",
                 "code": {
-                    "text": "Healthy baby girl weighing 3.2 kilograms"
+                    "text": "Third trimester of pregnancy, strong contractions, healthy baby girl weighing 3.2 kilograms."
                 },
                 "subject": {
-                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                    "reference": "Patient/e5e68dbd-21c0-4d63-b46c-aca4825c8fb4"
                 },
-                "effectiveDateTime": "2025-06-28T17:27:32.922999+00:00"
+                "effectiveDateTime": "2025-06-29T10:20:11.296672+00:00"
             }
         },
         {
-            "fullUrl": "urn:uuid:7a89e99f-b822-4c5d-8896-a3a32906d80f",
+            "fullUrl": "urn:uuid:fdac5d8c-c2d1-464d-9c00-ba371a2298af",
             "resource": {
-                "resourceType": "Procedure",
-                "id": "7a89e99f-b822-4c5d-8896-a3a32906d80f",
+                "resourceType": "MedicationRequest",
+                "id": "fdac5d8c-c2d1-464d-9c00-ba371a2298af",
                 "meta": {
                     "profile": [
-                        "http://hl7.org/fhir/StructureDefinition/Procedure"
+                        "http://hl7.org/fhir/StructureDefinition/MedicationRequest"
                     ]
                 },
-                "status": "completed",
-                "code": {
-                    "text": "Vaccination"
+                "status": "active",
+                "intent": "order",
+                "medicationCodeableConcept": {
+                    "text": "Vaccination of the newborn"
                 },
                 "subject": {
-                    "reference": "Patient/23478bfb-b8b5-4862-9084-ac85a1b98dd6"
+                    "reference": "Patient/e5e68dbd-21c0-4d63-b46c-aca4825c8fb4"
                 },
-                "performedDateTime": "2025-06-28T17:27:32.923013+00:00"
+                "authoredOn": "2025-06-29T10:20:11.296685+00:00"
             }
         }
     ]

@@ -103,9 +103,7 @@
             .container {
                 width: 80%; /* Adjust width for larger tablets */
             }
-            h1 {
-                font-size: 4.5rem; /* Adjusted for larger tablets */
-            }
+            /* h1 font size is now handled directly in HTML classes */
             .feature-grid {
                 grid-template-columns: repeat(2, 1fr); /* 2 columns on tablets */
             }
@@ -119,10 +117,7 @@
                 padding: 2.5rem;
                 border-radius: 2rem;
             }
-            h1 {
-                font-size: 3.5rem; /* Adjusted for smaller tablets */
-                line-height: 1.2;
-            }
+            /* h1 is now handled directly in HTML classes */
             p {
                 font-size: 1.25rem; /* Adjusted for smaller tablets */
                 margin-bottom: 2rem;
@@ -150,9 +145,7 @@
                 padding: 2rem;
                 border-radius: 1.5rem;
             }
-            h1 {
-                font-size: 2.5rem; /* Adjusted for mobile */
-            }
+            /* h1 is now handled directly in HTML classes */
             p {
                 font-size: 1rem; /* Adjusted for mobile */
             }
@@ -168,14 +161,15 @@
     <header class="w-full max-w-5xl px-8 py-4 mb-8 bg-white/70 backdrop-blur-sm rounded-full shadow-lg text-center z-20"
             style="animation: fadeInDown 0.8s ease-out forwards; opacity: 0; transform: translateY(-20px);">
         <h2 class="text-2xl font-bold text-gray-800">
-            Data AI <span class="text-blue-600">Health Informations</span>
+            Data AI <span class="text-blue-600">Health Info Extractor</span>
         </h2>
     </header>
 
     <!-- Main Content Container -->
     <div class="container bg-white/90 p-12 rounded-3xl shadow-3xl text-center relative z-10">
         <!-- Main Heading with Gradient Text -->
-        <h1 class="text-7xl font-extrabold text-gray-900 mb-8 leading-tight sm:text-6xl">
+        <!-- Adjusted Tailwind classes for h1 to provide even finer control on different screen sizes -->
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-8 leading-tight sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-purple-700">Welcome to</span>
             <br class="hidden sm:inline"> <span class="font-black">Medical Services</span>
         </h1>
@@ -191,7 +185,7 @@
 
         <!-- Features Section -->
         <div class="mt-20 text-left">
-            <h2 class="text-4xl font-bold text-gray-800 mb-10 text-center"> Capabilities</h2>
+            <h2 class="text-4xl font-bold text-gray-800 mb-10 text-center">Our Capabilities</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 feature-grid">
                 <!-- Feature Card 1 -->
                 <div class="feature-card p-6 flex flex-col items-center text-center">
@@ -218,7 +212,7 @@
     <!-- Footer Section (Subtle and informational) -->
     <footer class="w-full max-w-5xl px-8 py-4 mt-8 bg-white/70 backdrop-blur-sm rounded-full shadow-lg text-center text-gray-600 text-sm z-20"
             style="animation: fadeInUp 0.8s ease-out forwards; opacity: 0; transform: translateY(20px);">
-        &copy; 2025 Medical Health Solutions. All rights reserved.
+        &copy; 2025 Health Info Extractor. All rights reserved.
     </footer>
 
     <style>

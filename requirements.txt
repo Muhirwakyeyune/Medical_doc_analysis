@@ -5,3 +5,4 @@ reportlab
 PyPDF2
 python-docx
 gunicorn
+pdf2image
